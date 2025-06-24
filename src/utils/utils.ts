@@ -296,9 +296,9 @@ export const useSpeechSynthesis = (initialSettings?: Partial<SpeechSynthesisSett
     const handleError = (event: Event): void => {
       const errorEvent = event as SpeechSynthesisErrorEvent;
       setError({
-        error: (errorEvent as any).error,
-        utterance: (errorEvent as any).utterance,
-        message: (errorEvent as any).error || 'Speech synthesis error occurred'
+        error: errorEvent.error,
+        utterance: errorEvent.utterance,
+        message: errorEvent.error || 'Speech synthesis error occurred'
       });
       setIsSpeaking(false);
       console.error('Speech synthesis error:', errorEvent);
