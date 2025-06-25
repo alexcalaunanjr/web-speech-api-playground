@@ -344,7 +344,7 @@ export default function SpeechPage() {
                         {Array.from(result).map((alternative, altIndex) => (
                           <div key={altIndex} className="flex justify-between items-center">
                             <span className="text-sm text-gray-800 flex-1">
-                              <strong>Alt {altIndex + 1}:</strong> "{alternative.transcript}"
+                              <strong>Alt {altIndex + 1}:</strong> &quot;{alternative.transcript}&quot;
                             </span>
                             <span className="text-xs text-blue-600 ml-2">
                               {alternative.confidence 
@@ -392,14 +392,10 @@ export default function SpeechPage() {
           {/* Editable transcript field */}
           <div className="mt-4">
             <label className="block text-sm font-medium text-blue-700 mb-2">
-              Recognized Text (Editable)
+              Recognized Text
             </label>
             <textarea
               value={transcript}
-              onChange={(e) => {
-                // You can handle manual edits here if needed
-                // For now, we'll make it read-only to show the live transcript
-              }}
               className="w-full text-black p-3 border border-blue-300 rounded-md resize-y min-h-[120px] max-h-[300px] focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 ease-in-out bg-blue-50/50"
               placeholder="Recognized speech will appear here as you speak..."
               readOnly={isListening} // Make read-only while listening to prevent interference
