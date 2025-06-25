@@ -56,6 +56,10 @@ interface SpeechRecognitionHookReturn {
   isListening: boolean;
   error: SpeechRecognitionError | null;
   settings: SpeechRecognitionSettings;
+  // Add the raw results object
+  rawResults: SpeechRecognitionResultList | null;
+  // Change to array of all individual results
+  allResults: SpeechRecognitionResult[];
   startListening: () => void;
   stopListening: () => void;
   updateSettings: (newSettings: Partial<SpeechRecognitionSettings>) => void;
@@ -112,6 +116,9 @@ export const useSpeechRecognition = (initialSettings?: Partial<SpeechRecognition
   const [isListening, setIsListening] = useState<boolean>(false);
   // State to hold any errors during recognition
   const [error, setError] = useState<SpeechRecognitionError | null>(null);
+  // Add state for collecting all individual results
+  const [rawResults, setRawResults] = useState<SpeechRecognitionResultList | null>(null);
+  const [allResults, setAllResults] = useState<SpeechRecognitionResult[]>([]);
 
   // useRef to keep a mutable reference to the SpeechRecognition instance
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -137,11 +144,21 @@ export const useSpeechRecognition = (initialSettings?: Partial<SpeechRecognition
 
     // Event handler for when a result is received
     recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+      // Store the raw results object
+      setRawResults(event.results);
+      
       let currentSessionInterim = '';
       let currentSessionFinal = '';
 
+      // Collect all new results from this event
+      const newResults: SpeechRecognitionResult[] = [];
+      
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const result = event.results[i];
+        
+        // Add each new result to our collection
+        newResults.push(result);
+        
         const transcriptPart = result[0].transcript;
 
         if (result.isFinal) {
@@ -150,6 +167,9 @@ export const useSpeechRecognition = (initialSettings?: Partial<SpeechRecognition
           currentSessionInterim += transcriptPart;
         }
       }
+
+      // Update the array with all new results
+      setAllResults(prev => [...prev, ...newResults]);
 
       setFinalTranscript(prev => (prev + currentSessionFinal).trim());
       setInterimTranscript(currentSessionInterim.trim());
@@ -165,6 +185,8 @@ export const useSpeechRecognition = (initialSettings?: Partial<SpeechRecognition
       setFinalTranscript('');
       setInterimTranscript('');
       latestInterimRef.current = '';
+      // Clear the results array when starting a new session
+      setAllResults([]);
       console.log('Speech recognition started');
     };
 
@@ -241,6 +263,8 @@ export const useSpeechRecognition = (initialSettings?: Partial<SpeechRecognition
     isListening,
     error,
     settings,
+    rawResults,
+    allResults, // Return the array instead of lastResult
     startListening,
     stopListening,
     updateSettings,
@@ -393,6 +417,24 @@ export const languageCategories = {
     { code: 'en-NZ', name: 'English (New Zealand)' },
     { code: 'en-ZA', name: 'English (South Africa)' },
   ],
+  '🌴 Southeast Asian': [
+    { code: 'id-ID', name: 'Indonesian (Indonesia)' },
+    { code: 'ms-MY', name: 'Malay (Malaysia)' },
+    { code: 'th-TH', name: 'Thai (Thailand)' },
+    { code: 'vi-VN', name: 'Vietnamese (Vietnam)' },
+    { code: 'fil-PH', name: 'Filipino/Tagalog (Philippines)' },
+    { code: 'tl-PH', name: 'Tagalog (Philippines)' },
+    { code: 'my-MM', name: 'Burmese (Myanmar)' },
+    { code: 'km-KH', name: 'Khmer (Cambodia)' },
+    { code: 'lo-LA', name: 'Lao (Laos)' },
+  ],
+  '🌏 East Asian': [
+    { code: 'zh-CN', name: 'Chinese (Mandarin, China)' },
+    { code: 'zh-TW', name: 'Chinese (Traditional, Taiwan)' },
+    { code: 'zh-HK', name: 'Chinese (Cantonese, Hong Kong)' },
+    { code: 'ja-JP', name: 'Japanese (Japan)' },
+    { code: 'ko-KR', name: 'Korean (South Korea)' },
+  ],
   '🇪🇸 Spanish': [
     { code: 'es-ES', name: 'Spanish (Spain)' },
     { code: 'es-MX', name: 'Spanish (Mexico)' },
@@ -428,24 +470,6 @@ export const languageCategories = {
   '🇳🇱 Dutch': [
     { code: 'nl-NL', name: 'Dutch (Netherlands)' },
     { code: 'nl-BE', name: 'Dutch (Belgium)' },
-  ],
-  '🌏 East Asian': [
-    { code: 'zh-CN', name: 'Chinese (Mandarin, China)' },
-    { code: 'zh-TW', name: 'Chinese (Traditional, Taiwan)' },
-    { code: 'zh-HK', name: 'Chinese (Cantonese, Hong Kong)' },
-    { code: 'ja-JP', name: 'Japanese (Japan)' },
-    { code: 'ko-KR', name: 'Korean (South Korea)' },
-  ],
-  '🌴 Southeast Asian': [
-    { code: 'id-ID', name: 'Indonesian (Indonesia)' },
-    { code: 'ms-MY', name: 'Malay (Malaysia)' },
-    { code: 'th-TH', name: 'Thai (Thailand)' },
-    { code: 'vi-VN', name: 'Vietnamese (Vietnam)' },
-    { code: 'fil-PH', name: 'Filipino/Tagalog (Philippines)' },
-    { code: 'tl-PH', name: 'Tagalog (Philippines)' },
-    { code: 'my-MM', name: 'Burmese (Myanmar)' },
-    { code: 'km-KH', name: 'Khmer (Cambodia)' },
-    { code: 'lo-LA', name: 'Lao (Laos)' },
   ],
   '🇮🇳 Indian Subcontinent': [
     { code: 'hi-IN', name: 'Hindi (India)' },

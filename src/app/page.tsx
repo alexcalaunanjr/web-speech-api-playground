@@ -15,6 +15,8 @@ export default function SpeechPage() {
     isListening,
     error: recognitionError,
     settings: recognitionSettings,
+    rawResults,
+    allResults, // Changed from lastResult to allResults
     startListening,
     stopListening,
     updateSettings: updateRecognitionSettings,
@@ -56,7 +58,7 @@ export default function SpeechPage() {
       {/* Main container */}
       <div className="bg-white p-8 rounded-lg shadow-xl max-w-4xl w-full text-center">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Web Speech API Demo</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Web Speech API Demo by alex</h1>
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
@@ -253,6 +255,176 @@ export default function SpeechPage() {
               Error: {recognitionError.message} (Code: {recognitionError.error})
             </p>
           )}
+
+          {/* Show raw speech recognition object */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-blue-700 mb-2">
+              Raw Speech Recognition Object
+            </label>
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Raw Results */}
+              <div>
+                <h4 className="text-sm font-medium text-blue-600 mb-2">Full Results Object</h4>
+                <textarea
+                  value={rawResults ? JSON.stringify({
+                    length: rawResults.length,
+                    results: Array.from(rawResults).map((result, index) => ({
+                      index,
+                      isFinal: result.isFinal,
+                      length: result.length,
+                      alternatives: Array.from(result).map((alt, altIndex) => ({
+                        transcript: alt.transcript,
+                        confidence: alt.confidence,
+                        altIndex
+                      }))
+                    }))
+                  }, null, 2) : 'No results yet...'}
+                  readOnly
+                  className="w-full text-black p-3 border border-blue-300 rounded-md resize-y min-h-[200px] max-h-[400px] focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 ease-in-out bg-blue-50/50 font-mono text-xs overflow-auto"
+                  placeholder="Speech recognition results object will appear here..."
+                />
+              </div>
+
+              {/* All Individual Results Array */}
+              <div>
+                <h4 className="text-sm font-medium text-blue-600 mb-2">
+                  All Individual Results Array ({allResults.length} results)
+                </h4>
+                <textarea
+                  value={allResults.length > 0 ? JSON.stringify(
+                    allResults.map((result, index) => ({
+                      resultIndex: index,
+                      isFinal: result.isFinal,
+                      length: result.length,
+                      alternatives: Array.from(result).map((alt, altIndex) => ({
+                        index: altIndex,
+                        transcript: alt.transcript,
+                        confidence: alt.confidence || 'N/A'
+                      }))
+                    })), null, 2
+                  ) : 'No individual results yet...'}
+                  readOnly
+                  className="w-full text-black p-3 border border-blue-300 rounded-md resize-y min-h-[200px] max-h-[400px] focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 ease-in-out bg-blue-50/50 font-mono text-xs overflow-auto"
+                  placeholder="Individual speech recognition results will appear here..."
+                />
+              </div>
+            </div>
+
+            {/* Show all results in a more readable format */}
+            {allResults.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-blue-600 mb-2">
+                  Individual Results Timeline ({allResults.length} results)
+                </h4>
+                <div className="max-h-[300px] overflow-y-auto space-y-2">
+                  {allResults.map((result, index) => (
+                    <div 
+                      key={index} 
+                      className={`p-3 rounded border-l-4 ${
+                        result.isFinal 
+                          ? 'bg-green-50 border-green-400' 
+                          : 'bg-yellow-50 border-yellow-400'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs font-medium text-gray-600">
+                          Result #{index + 1}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          result.isFinal 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {result.isFinal ? 'Final' : 'Interim'}
+                        </span>
+                      </div>
+                      
+                      {/* Show all alternatives for this result */}
+                      <div className="space-y-1">
+                        {Array.from(result).map((alternative, altIndex) => (
+                          <div key={altIndex} className="flex justify-between items-center">
+                            <span className="text-sm text-gray-800 flex-1">
+                              <strong>Alt {altIndex + 1}:</strong> "{alternative.transcript}"
+                            </span>
+                            <span className="text-xs text-blue-600 ml-2">
+                              {alternative.confidence 
+                                ? `${(alternative.confidence * 100).toFixed(1)}%` 
+                                : 'N/A'
+                              }
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Show total alternatives count */}
+                      <div className="text-xs text-gray-500 mt-1">
+                        {result.length} alternative{result.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Summary stats */}
+                <div className="mt-3 p-2 bg-blue-100 rounded text-sm">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="font-medium text-blue-700">Total Results</div>
+                      <div className="text-blue-600">{allResults.length}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-green-700">Final Results</div>
+                      <div className="text-green-600">
+                        {allResults.filter(r => r.isFinal).length}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-yellow-700">Interim Results</div>
+                      <div className="text-yellow-600">
+                        {allResults.filter(r => !r.isFinal).length}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Editable transcript field */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-blue-700 mb-2">
+              Recognized Text (Editable)
+            </label>
+            <textarea
+              value={transcript}
+              onChange={(e) => {
+                // You can handle manual edits here if needed
+                // For now, we'll make it read-only to show the live transcript
+              }}
+              className="w-full text-black p-3 border border-blue-300 rounded-md resize-y min-h-[120px] max-h-[300px] focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 ease-in-out bg-blue-50/50"
+              placeholder="Recognized speech will appear here as you speak..."
+              readOnly={isListening} // Make read-only while listening to prevent interference
+            />
+            {!isListening && transcript && (
+              <div className="flex justify-end mt-2 space-x-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(transcript);
+                  }}
+                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  Copy Text
+                </button>
+                <button
+                  onClick={() => {
+                    setTextToSpeak(transcript);
+                  }}
+                  className="px-3 py-1 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                >
+                  Use for TTS
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Speech Synthesis Section */}
